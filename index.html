@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game 100 Ô Vuông Toán Học - Thầy Quý</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .game-title {
+            color: #ffffff;
+            font-size: 36px;
+            text-transform: uppercase;
+            font-weight: 900;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .progress-text {
+            color: #fff;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            background: rgba(0,0,0,0.2);
+            padding: 10px 20px;
+            border-radius: 20px;
+        }
+        
+        /* GRID 10x10 */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-width: 900px;
+            width: 100%;
+        }
+        .grid-item {
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #4facfe;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            user-select: none;
+        }
+        .grid-item:hover {
+            background: #00f2fe;
+            transform: scale(1.05);
+        }
+        .grid-item.completed {
+            background: #28a745;
+            color: white;
+            cursor: default;
+            transform: none;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+        }
+        .grid-item.completed::after {
+            content: '✔';
+            position: absolute;
+            font-size: 30px;
+            opacity: 0.3;
+        }
+
+        /* MODAL (HỘP THOẠI CÂU HỎI) */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 800px;
+            border-radius: 20px;
+            padding: 30px;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+        }
+        .close-btn:hover { color: #e83e8c; }
+        
+        .question {
+            font-size: 22px;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-weight: bold;
+            line-height: 1.5;
+            text-align: left;
+        }
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .btn-option {
+            background: #ffffff;
+            border: 2px solid #e0e0e0;
+            padding: 15px;
+            font-size: 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            color: #333;
+            text-align: left;
+        }
+        .btn-option:hover {
+            background: #f7f9fa;
+            border-color: #74ebd5;
+        }
+        .btn-option.correct {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        .btn-option.wrong {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+            animation: shake 0.4s;
+        }
+        .explanation {
+            display: none;
+            margin-top: 25px;
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: left;
+            font-size: 16px;
+            line-height: 1.5;
+            color: #856404;
+        }
+        .feedback-correct {
+            color: #28a745;
+            font-weight: bold;
+            font-size: 20px;
+            margin-bottom: 10px;
+            display: block;
+        }
+        .btn-back-grid {
+            display: none;
+            margin-top: 20px;
+            background: #e83e8c;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 18px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-weight: bold;
+        }
+        .btn-back-grid:hover {
+            background: #c23074;
+            transform: scale(1.05);
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+        
+        @media (max-width: 600px) {
+            .grid-container { grid-template-columns: repeat(5, 1fr); gap: 5px; }
+            .options { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1 class="game-title">ĐẤU TRƯỜNG 100 Ô VUÔNG TOÁN HỌC</h1>
+    <div class="progress-text">Đã giải mã: <span id="solved-count">0</span> / 100 ô</div>
+
+    <div class="grid-container" id="grid">
+        <!-- JS sẽ sinh 100 ô vuông ở đây -->
+    </div>
+
+    <!-- HỘP THOẠI CÂU HỎI -->
+    <div class="modal-overlay" id="questionModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <div class="question" id="q-text">Đang tải...</div>
+            <div class="options" id="q-options"></div>
+            
+            <div class="explanation" id="explanation">
+                <span class="feedback-correct">🎉 Tuyệt vời! Em đã mở khóa thành công ô này!</span>
+                <div id="exp-text"></div>
+            </div>
+            
+            <button class="btn-back-grid" id="btn-back-grid" onclick="closeModal()">Quay Lại Bảng Chọn ➔</button>
+        </div>
+    </div>
+
+<script>
+    const questions = [
+        {
+            q: "Câu 1: Cho hàm số y = f(x) có đạo hàm f'(x) = 3x^2 + 1. Khẳng định nào sau đây đúng?",
+            opts: ["C. Hàm số có 1 điểm cực trị", "D. Hàm số nghịch biến trên (0; 3)", "A. Hàm số nghịch biến trên R", "B. Hàm số đồng biến trên R"],
+            ans: 3,
+            exp: "Hướng dẫn: Ta có f'(x) = 3x^2 + 1 > 0 với mọi x thuộc R. Do đó hàm số đồng biến trên R."
+        },
+        {
+            q: "Câu 2: Cho hàm số y = f(x) có đạo hàm f'(x) = 2x^2 + 1. Khẳng định nào sau đây đúng?",
+            opts: ["D. Hàm số nghịch biến trên (0; 2)", "B. Hàm số đồng biến trên R", "A. Hàm số nghịch biến trên R", "C. Hàm số có 1 điểm cực trị"],
+            ans: 1,
+            exp: "Hướng dẫn: Ta có f'(x) = 2x^2 + 1 > 0 với mọi x thuộc R. Do đó hàm số đồng biến trên R."
+        },
+        {
+            q: "Câu 3: Cho hàm số y = f(x) có đạo hàm f'(x) = 3x^2 + 1. Khẳng định nào sau đây đúng?",
+            opts: ["A. Hàm số nghịch biến trên R", "B. Hàm số đồng biến trên R", "C. Hàm số có 1 điểm cực trị", "D. Hàm số nghịch biến trên (0; 3)"],
+            ans: 1,
+            exp: "Hướng dẫn: Ta có f'(x) = 3x^2 + 1 > 0 với mọi x thuộc R. Do đó hàm số đồng biến trên R."
+        },
+        {
+            q: "Câu 4: Cho hàm số y = f(x) có đạo hàm f'(x) = 5x^2 + 1. Khẳng định nào sau đây đúng?",
+            opts: ["D. Hàm số nghịch biến trên (0; 5)", "B. Hàm số đồng biến trên R", "C. Hàm số có 1 điểm cực trị", "A. Hàm số nghịch biến trên R"],
+            ans: 1,
+            exp: "Hướng dẫn: Ta có f'(x) = 5x^2 + 1 > 0 với mọi x thuộc R. Do đó hàm số đồng biến trên R."
+        },
+        {
+            q: "Câu 5: Cho hàm số y = f(x) có đạo hàm f'(x) = 5x^2 + 1. Khẳng định nào sau đây đúng?",
+            opts: ["D. Hàm số nghịch biến trên (0; 5)", "B. Hàm số đồng biến trên R", "A. Hàm số nghịch biến trên R", "C. Hàm số có 1 điểm cực trị"],
+            ans: 1,
+            exp: "Hướng dẫn: Ta có f'(x) = 5x^2 + 1 > 0 với mọi x thuộc R. Do đó hàm số đồng biến trên R."
+        },
+        {
+            q: "Câu 6: Cho hàm số y = f(x) có đạo hàm f'(x) = 5x^2 + 1. Khẳng định nào sau đây đúng?",
+            opts: ["A. Hàm số nghịch biến trên R", "D. Hàm số nghịch biến trên (0; 5)", "C. Hàm số có 1 điểm cực trị", "B. Hàm số đồng biến trên R"],
+            ans: 3,
+            exp: "Hướng dẫn: Ta có f'(x) = 5x^2 + 1 > 0 với mọi x thuộc R. Do đó hàm số đồng biến trên R."
+        },
+        {
+            q: "Câu 7: Cho hàm số y = f(x) có đạo hàm f'(x) = 5x^2 + 1. Khẳng định nào sau đây đúng?",
+            opts: ["D. Hàm số nghịch biến trên (0; 5)", "C. Hàm số có 1 điểm cực trị", "B. Hàm số đồng biến trên R", "A. Hàm số nghịch biến trên R"],
+            ans: 2,
+            exp: "Hướng dẫn: Ta có f'(x) = 5x^2 + 1 > 0 với mọi x thuộc R. Do đó hàm số đồng biến trên R."
+        },
+        {
+            q: "Câu 8: Cho hàm số y = f(x) có đạo hàm f'(x) = 3x^2 + 1. Khẳng định nào sau đây đúng?",
+            opts: ["D. Hàm số nghịch biến trên (0; 3)", "C. Hàm số có 1 điểm cực trị", "B. Hàm số đồng biến trên R", "A. Hàm số nghịch biến trên R"],
+            ans: 2,
+            exp: "Hướng dẫn: Ta có f'(x) = 3x^2 + 1 > 0 với mọi x thuộc R. Do đó hàm số đồng biến trên R."
+        },
+        {
+            q: "Câu 9: Cho hàm số y = f(x) có đạo hàm f'(x) = 3x^2 + 1. Khẳng định nào sau đây đúng?",
+            opts: ["A. Hàm số nghịch biến trên R", "C. Hàm số có 1 điểm cực trị", "D. Hàm số nghịch biến trên (0; 3)", "B. Hàm số đồng biến trên R"],
+            ans: 3,
+            exp: "Hướng dẫn: Ta có f'(x) = 3x^2 + 1 > 0 với mọi x thuộc R. Do đó hàm số đồng biến trên R."
+        },
+        {
+            q: "Câu 10: Cho hàm số y = f(x) có đạo hàm f'(x) = 3x^2 + 1. Khẳng định nào sau đây đúng?",
+            opts: ["A. Hàm số nghịch biến trên R", "B. Hàm số đồng biến trên R", "C. Hàm số có 1 điểm cực trị", "D. Hàm số nghịch biến trên (0; 3)"],
+            ans: 1,
+            exp: "Hướng dẫn: Ta có f'(x) = 3x^2 + 1 > 0 với mọi x thuộc R. Do đó hàm số đồng biến trên R."
+        },
+        {
+            q: "Câu 11: Cho hàm số y = f(x) có đạo hàm f'(x) = 2x^2 + 1. Khẳng định nào sau đây đúng?",
+            opts: ["A. Hàm số nghịch biến trên R", "B. Hàm số đồng biến trên R", "C. Hàm số có 1 điểm cực trị", "D. Hàm số nghịch biến trên (0; 2)"],
+            ans: 1,
+            exp: "Hướng dẫn: Ta có f'(x) = 2x^2 + 1 > 0 với mọi x thuộc R. Do đó hàm số đồng biến trên R."
+        },
+        {
+            q: "Câu 12: Cho hàm số y = f(x) có đạo hàm f'(x) = 4x^2 + 1. Khẳng định nào sau đây đúng?",
+            opts: ["C. Hàm số có 1 điểm cực trị", "B. Hàm số đồng biến trên R", "A. Hàm số nghịch biến trên R", "D. Hàm số nghịch biến trên (0; 4)"],
+            ans: 1,
+            exp: "Hướng dẫn: Ta có f'(x) = 4x^2 + 1 > 0 với mọi x thuộc R. Do đó hàm số đồng biến trên R."
+        },
+        {
+            q: "Câu 13: Cho hàm số y = f(x) có đạo hàm f'(x) = 3x^2 + 1. Khẳng định nào sau đây đúng?",
+            opts: ["D. Hàm số nghịch biến trên (0; 3)", "A. Hàm số nghịch biến trên R", "C. Hàm số có 1 điểm cực trị", "B. Hàm số đồng biến trên R"],
+            ans: 3,
+            exp: "Hướng dẫn: Ta có f'(x) = 3x^2 + 1 > 0 với mọi x thuộc R. Do đó hàm số đồng biến trên R."
+        },
+        {
+            q: "Câu 14: Cho hàm số y = f(x) có đạo hàm f'(x) = 3x^2 + 1. Khẳng định nào sau đây đúng?",
+            opts: ["C. Hàm số có 1 điểm cực trị", "B. Hàm số đồng biến trên R", "D. Hàm số nghịch biến trên (0; 3)", "A. Hàm số nghịch biến trên R"],
+            ans: 1,
+            exp: "Hướng dẫn: Ta có f'(x) = 3x^2 + 1 > 0 với mọi x thuộc R. Do đó hàm số đồng biến trên R."
+        },
+        {
+            q: "Câu 15: Cho hàm số y = f(x) có đạo hàm f'(x) = 4x^2 + 1. Khẳng định nào sau đây đúng?",
+            opts: ["B. Hàm số đồng biến trên R", "D. Hàm số nghịch biến trên (0; 4)", "C. Hàm số có 1 điểm cực trị", "A. Hàm số nghịch biến trên R"],
+            ans: 0,
+            exp: "Hướng dẫn: Ta có f'(x) = 4x^2 + 1 > 0 với mọi x thuộc R. Do đó hàm số đồng biến trên R."
+        },
+        {
+            q: "Câu 16: Cho hàm số y = f(x) có đạo hàm f'(x) = 5x^2 + 1. Khẳng định nào sau đây đúng?",
+            opts: ["A. Hàm số nghịch biến trên R", "D. Hàm số nghịch biến trên (0; 5)", "C. Hàm số có 1 điểm cực trị", "B. Hàm số đồng biến trên R"],
+            ans: 3,
+            exp: "Hướng dẫn: Ta có f'(x) = 5x^2 + 1 > 0 với mọi x thuộc R. Do đó hàm số đồng biến trên R."
+        },
+        {
+            q: "Câu 17: Cho hàm số y = f(x) có đạo hàm f'(x) = 4x^2 + 1. Khẳng định nào sau đây đúng?",
+            opts: ["B. Hàm số đồng biến trên R", "C. Hàm số có 1 điểm cực trị", "D. Hàm số nghịch biến trên (0; 4)", "A. Hàm số nghịch biến trên R"],
+            ans: 0,
+            exp: "Hướng dẫn: Ta có f'(x) = 4x^2 + 1 > 0 với mọi x thuộc R. Do đó hàm số đồng biến trên R."
+        },
+        {
+            q: "Câu 18: Cho hàm số y = f(x) có đạo hàm f'(x) = 3x^2 + 1. Khẳng định nào sau đây đúng?",
+            opts: ["C. Hàm số có 1 điểm cực trị", "B. Hàm số đồng biến trên R", "D. Hàm số nghịch biến trên (0; 3)", "A. Hàm số nghịch biến trên R"],
+            ans: 1,
+            exp: "Hướng dẫn: Ta có f'(x) = 3x^2 + 1 > 0 với mọi x thuộc R. Do đó hàm số đồng biến trên R."
+        },
+        {
+            q: "Câu 19: Cho hàm số y = f(x) có đạo hàm f'(x) = 3x^2 + 1. Khẳng định nào sau đây đúng?",
+            opts: ["A. Hàm số nghịch biến trên R", "D. Hàm số nghịch biến trên (0; 3)", "C. Hàm số có 1 điểm cực trị", "B. Hàm số đồng biến trên R"],
+            ans: 3,
+            exp: "Hướng dẫn: Ta có f'(x) = 3x^2 + 1 > 0 với mọi x thuộc R. Do đó hàm số đồng biến trên R."
+        },
+        {
+            q: "Câu 20: Cho hàm số y = f(x) có đạo hàm f'(x) = 4x^2 + 1. Khẳng định nào sau đây đúng?",
+            opts: ["B. Hàm số đồng biến trên R", "C. Hàm số có 1 điểm cực trị", "D. Hàm số nghịch biến trên (0; 4)", "A. Hàm số nghịch biến trên R"],
+            ans: 0,
+            exp: "Hướng dẫn: Ta có f'(x) = 4x^2 + 1 > 0 với mọi x thuộc R. Do đó hàm số đồng biến trên R."
+        },
+        {
+            q: "Câu 21: Tập xác định của hàm số y = log_7(x - 3) là:",
+            opts: ["B. [3; +∞)", "D. (-∞; 3)", "A. (3; +∞)", "C. R \ {3}"],
+            ans: 2,
+            exp: "Hướng dẫn: Biểu thức logarit xác định khi x - 3 > 0 ⇔ x > 3. Vậy tập xác định là (3; +∞)."
+        },
+        {
+            q: "Câu 22: Tập xác định của hàm số y = log_7(x - 2) là:",
+            opts: ["D. (-∞; 2)", "C. R \ {2}", "A. (2; +∞)", "B. [2; +∞)"],
+            ans: 2,
+            exp: "Hướng dẫn: Biểu thức logarit xác định khi x - 2 > 0 ⇔ x > 2. Vậy tập xác định là (2; +∞)."
+        },
+        {
+            q: "Câu 23: Tập xác định của hàm số y = log_7(x - 6) là:",
+            opts: ["D. (-∞; 6)", "B. [6; +∞)", "A. (6; +∞)", "C. R \ {6}"],
+            ans: 2,
+            exp: "Hướng dẫn: Biểu thức logarit xác định khi x - 6 > 0 ⇔ x > 6. Vậy tập xác định là (6; +∞)."
+        },
+        {
+            q: "Câu 24: Tập xác định của hàm số y = log_5(x - 6) là:",
+            opts: ["C. R \ {6}", "A. (6; +∞)", "D. (-∞; 6)", "B. [6; +∞)"],
+            ans: 1,
+            exp: "Hướng dẫn: Biểu thức logarit xác định khi x - 6 > 0 ⇔ x > 6. Vậy tập xác định là (6; +∞)."
+        },
+        {
+            q: "Câu 25: Tập xác định của hàm số y = log_2(x - 8) là:",
+            opts: ["D. (-∞; 8)", "A. (8; +∞)", "C. R \ {8}", "B. [8; +∞)"],
+            ans: 1,
+            exp: "Hướng dẫn: Biểu thức logarit xác định khi x - 8 > 0 ⇔ x > 8. Vậy tập xác định là (8; +∞)."
+        },
+        {
+            q: "Câu 26: Tập xác định của hàm số y = log_7(x - 5) là:",
+            opts: ["A. (5; +∞)", "D. (-∞; 5)", "C. R \ {5}", "B. [5; +∞)"],
+            ans: 0,
+            exp: "Hướng dẫn: Biểu thức logarit xác định khi x - 5 > 0 ⇔ x > 5. Vậy tập xác định là (5; +∞)."
+        },
+        {
+            q: "Câu 27: Tập xác định của hàm số y = log_2(x - 4) là:",
+            opts: ["A. (4; +∞)", "C. R \ {4}", "D. (-∞; 4)", "B. [4; +∞)"],
+            ans: 0,
+            exp: "Hướng dẫn: Biểu thức logarit xác định khi x - 4 > 0 ⇔ x > 4. Vậy tập xác định là (4; +∞)."
+        },
+        {
+            q: "Câu 28: Tập xác định của hàm số y = log_2(x - 7) là:",
+            opts: ["A. (7; +∞)", "B. [7; +∞)", "C. R \ {7}", "D. (-∞; 7)"],
+            ans: 0,
+            exp: "Hướng dẫn: Biểu thức logarit xác định khi x - 7 > 0 ⇔ x > 7. Vậy tập xác định là (7; +∞)."
+        },
+        {
+            q: "Câu 29: Tập xác định của hàm số y = log_5(x - 1) là:",
+            opts: ["C. R \ {1}", "B. [1; +∞)", "D. (-∞; 1)", "A. (1; +∞)"],
+            ans: 3,
+            exp: "Hướng dẫn: Biểu thức logarit xác định khi x - 1 > 0 ⇔ x > 1. Vậy tập xác định là (1; +∞)."
+        },
+        {
+            q: "Câu 30: Tập xác định của hàm số y = log_7(x - 3) là:",
+            opts: ["B. [3; +∞)", "A. (3; +∞)", "C. R \ {3}", "D. (-∞; 3)"],
+            ans: 1,
+            exp: "Hướng dẫn: Biểu thức logarit xác định khi x - 3 > 0 ⇔ x > 3. Vậy tập xác định là (3; +∞)."
+        },
+        {
+            q: "Câu 31: Tập xác định của hàm số y = log_5(x - 9) là:",
+            opts: ["B. [9; +∞)", "D. (-∞; 9)", "C. R \ {9}", "A. (9; +∞)"],
+            ans: 3,
+            exp: "Hướng dẫn: Biểu thức logarit xác định khi x - 9 > 0 ⇔ x > 9. Vậy tập xác định là (9; +∞)."
+        },
+        {
+            q: "Câu 32: Tập xác định của hàm số y = log_5(x - 10) là:",
+            opts: ["B. [10; +∞)", "A. (10; +∞)", "C. R \ {10}", "D. (-∞; 10)"],
+            ans: 1,
+            exp: "Hướng dẫn: Biểu thức logarit xác định khi x - 10 > 0 ⇔ x > 10. Vậy tập xác định là (10; +∞)."
+        },
+        {
+            q: "Câu 33: Tập xác định của hàm số y = log_3(x - 5) là:",
+            opts: ["A. (5; +∞)", "C. R \ {5}", "D. (-∞; 5)", "B. [5; +∞)"],
+            ans: 0,
+            exp: "Hướng dẫn: Biểu thức logarit xác định khi x - 5 > 0 ⇔ x > 5. Vậy tập xác định là (5; +∞)."
+        },
+        {
+            q: "Câu 34: Tập xác định của hàm số y = log_3(x - 6) là:",
+            opts: ["B. [6; +∞)", "D. (-∞; 6)", "C. R \ {6}", "A. (6; +∞)"],
+            ans: 3,
+            exp: "Hướng dẫn: Biểu thức logarit xác định khi x - 6 > 0 ⇔ x > 6. Vậy tập xác định là (6; +∞)."
+        },
+        {
+            q: "Câu 35: Tập xác định của hàm số y = log_2(x - 7) là:",
+            opts: ["C. R \ {7}", "D. (-∞; 7)", "A. (7; +∞)", "B. [7; +∞)"],
+            ans: 2,
+            exp: "Hướng dẫn: Biểu thức logarit xác định khi x - 7 > 0 ⇔ x > 7. Vậy tập xác định là (7; +∞)."
+        },
+        {
+            q: "Câu 36: Tập xác định của hàm số y = log_2(x - 8) là:",
+            opts: ["C. R \ {8}", "D. (-∞; 8)", "B. [8; +∞)", "A. (8; +∞)"],
+            ans: 3,
+            exp: "Hướng dẫn: Biểu thức logarit xác định khi x - 8 > 0 ⇔ x > 8. Vậy tập xác định là (8; +∞)."
+        },
+        {
+            q: "Câu 37: Tập xác định của hàm số y = log_7(x - 4) là:",
+            opts: ["B. [4; +∞)", "D. (-∞; 4)", "C. R \ {4}", "A. (4; +∞)"],
+            ans: 3,
+            exp: "Hướng dẫn: Biểu thức logarit xác định khi x - 4 > 0 ⇔ x > 4. Vậy tập xác định là (4; +∞)."
+        },
+        {
+            q: "Câu 38: Tập xác định của hàm số y = log_3(x - 8) là:",
+            opts: ["D. (-∞; 8)", "B. [8; +∞)", "A. (8; +∞)", "C. R \ {8}"],
+            ans: 2,
+            exp: "Hướng dẫn: Biểu thức logarit xác định khi x - 8 > 0 ⇔ x > 8. Vậy tập xác định là (8; +∞)."
+        },
+        {
+            q: "Câu 39: Tập xác định của hàm số y = log_3(x - 7) là:",
+            opts: ["B. [7; +∞)", "D. (-∞; 7)", "C. R \ {7}", "A. (7; +∞)"],
+            ans: 3,
+            exp: "Hướng dẫn: Biểu thức logarit xác định khi x - 7 > 0 ⇔ x > 7. Vậy tập xác định là (7; +∞)."
+        },
+        {
+            q: "Câu 40: Tập xác định của hàm số y = log_7(x - 10) là:",
+            opts: ["B. [10; +∞)", "C. R \ {10}", "A. (10; +∞)", "D. (-∞; 10)"],
+            ans: 2,
+            exp: "Hướng dẫn: Biểu thức logarit xác định khi x - 10 > 0 ⇔ x > 10. Vậy tập xác định là (10; +∞)."
+        },
+        {
+            q: "Câu 41: Họ nguyên hàm của hàm số f(x) = 24x^3 là:",
+            opts: ["C. 6x^3 + C", "D. 72x^2 + C", "B. 24x^4 + C", "A. 6x^4 + C"],
+            ans: 3,
+            exp: "Hướng dẫn: Áp dụng công thức ∫x^n dx = x^(n+1)/(n+1) + C. Ta có ∫24x^3 dx = 24 * x^4/4 + C = 6x^4 + C."
+        },
+        {
+            q: "Câu 42: Họ nguyên hàm của hàm số f(x) = 9x^2 là:",
+            opts: ["B. 9x^3 + C", "C. 3x^2 + C", "A. 3x^3 + C", "D. 18x^1 + C"],
+            ans: 2,
+            exp: "Hướng dẫn: Áp dụng công thức ∫x^n dx = x^(n+1)/(n+1) + C. Ta có ∫9x^2 dx = 9 * x^3/3 + C = 3x^3 + C."
+        },
+        {
+            q: "Câu 43: Họ nguyên hàm của hàm số f(x) = 18x^2 là:",
+            opts: ["D. 36x^1 + C", "B. 18x^3 + C", "A. 6x^3 + C", "C. 6x^2 + C"],
+            ans: 2,
+            exp: "Hướng dẫn: Áp dụng công thức ∫x^n dx = x^(n+1)/(n+1) + C. Ta có ∫18x^2 dx = 18 * x^3/3 + C = 6x^3 + C."
+        },
+        {
+            q: "Câu 44: Họ nguyên hàm của hàm số f(x) = 20x^3 là:",
+            opts: ["D. 60x^2 + C", "B. 20x^4 + C", "A. 5x^4 + C", "C. 5x^3 + C"],
+            ans: 2,
+            exp: "Hướng dẫn: Áp dụng công thức ∫x^n dx = x^(n+1)/(n+1) + C. Ta có ∫20x^3 dx = 20 * x^4/4 + C = 5x^4 + C."
+        },
+        {
+            q: "Câu 45: Họ nguyên hàm của hàm số f(x) = 8x^1 là:",
+            opts: ["A. 4x^2 + C", "B. 8x^2 + C", "C. 4x^1 + C", "D. 8x^0 + C"],
+            ans: 0,
+            exp: "Hướng dẫn: Áp dụng công thức ∫x^n dx = x^(n+1)/(n+1) + C. Ta có ∫8x^1 dx = 8 * x^2/2 + C = 4x^2 + C."
+        },
+        {
+            q: "Câu 46: Họ nguyên hàm của hàm số f(x) = 16x^3 là:",
+            opts: ["C. 4x^3 + C", "B. 16x^4 + C", "D. 48x^2 + C", "A. 4x^4 + C"],
+            ans: 3,
+            exp: "Hướng dẫn: Áp dụng công thức ∫x^n dx = x^(n+1)/(n+1) + C. Ta có ∫16x^3 dx = 16 * x^4/4 + C = 4x^4 + C."
+        },
+        {
+            q: "Câu 47: Họ nguyên hàm của hàm số f(x) = 8x^3 là:",
+            opts: ["C. 2x^3 + C", "D. 24x^2 + C", "B. 8x^4 + C", "A. 2x^4 + C"],
+            ans: 3,
+            exp: "Hướng dẫn: Áp dụng công thức ∫x^n dx = x^(n+1)/(n+1) + C. Ta có ∫8x^3 dx = 8 * x^4/4 + C = 2x^4 + C."
+        },
+        {
+            q: "Câu 48: Họ nguyên hàm của hàm số f(x) = 10x^1 là:",
+            opts: ["C. 5x^1 + C", "D. 10x^0 + C", "A. 5x^2 + C", "B. 10x^2 + C"],
+            ans: 2,
+            exp: "Hướng dẫn: Áp dụng công thức ∫x^n dx = x^(n+1)/(n+1) + C. Ta có ∫10x^1 dx = 10 * x^2/2 + C = 5x^2 + C."
+        },
+        {
+            q: "Câu 49: Họ nguyên hàm của hàm số f(x) = 4x^1 là:",
+            opts: ["A. 2x^2 + C", "B. 4x^2 + C", "D. 4x^0 + C", "C. 2x^1 + C"],
+            ans: 0,
+            exp: "Hướng dẫn: Áp dụng công thức ∫x^n dx = x^(n+1)/(n+1) + C. Ta có ∫4x^1 dx = 4 * x^2/2 + C = 2x^2 + C."
+        },
+        {
+            q: "Câu 50: Họ nguyên hàm của hàm số f(x) = 9x^2 là:",
+            opts: ["C. 3x^2 + C", "D. 18x^1 + C", "A. 3x^3 + C", "B. 9x^3 + C"],
+            ans: 2,
+            exp: "Hướng dẫn: Áp dụng công thức ∫x^n dx = x^(n+1)/(n+1) + C. Ta có ∫9x^2 dx = 9 * x^3/3 + C = 3x^3 + C."
+        },
+        {
+            q: "Câu 51: Họ nguyên hàm của hàm số f(x) = 16x^3 là:",
+            opts: ["A. 4x^4 + C", "C. 4x^3 + C", "B. 16x^4 + C", "D. 48x^2 + C"],
+            ans: 0,
+            exp: "Hướng dẫn: Áp dụng công thức ∫x^n dx = x^(n+1)/(n+1) + C. Ta có ∫16x^3 dx = 16 * x^4/4 + C = 4x^4 + C."
+        },
+        {
+            q: "Câu 52: Họ nguyên hàm của hàm số f(x) = 10x^1 là:",
+            opts: ["C. 5x^1 + C", "D. 10x^0 + C", "B. 10x^2 + C", "A. 5x^2 + C"],
+            ans: 3,
+            exp: "Hướng dẫn: Áp dụng công thức ∫x^n dx = x^(n+1)/(n+1) + C. Ta có ∫10x^1 dx = 10 * x^2/2 + C = 5x^2 + C."
+        },
+        {
+            q: "Câu 53: Họ nguyên hàm của hàm số f(x) = 12x^2 là:",
+            opts: ["C. 4x^2 + C", "A. 4x^3 + C", "D. 24x^1 + C", "B. 12x^3 + C"],
+            ans: 1,
+            exp: "Hướng dẫn: Áp dụng công thức ∫x^n dx = x^(n+1)/(n+1) + C. Ta có ∫12x^2 dx = 12 * x^3/3 + C = 4x^3 + C."
+        },
+        {
+            q: "Câu 54: Họ nguyên hàm của hàm số f(x) = 12x^3 là:",
+            opts: ["A. 3x^4 + C", "D. 36x^2 + C", "B. 12x^4 + C", "C. 3x^3 + C"],
+            ans: 0,
+            exp: "Hướng dẫn: Áp dụng công thức ∫x^n dx = x^(n+1)/(n+1) + C. Ta có ∫12x^3 dx = 12 * x^4/4 + C = 3x^4 + C."
+        },
+        {
+            q: "Câu 55: Họ nguyên hàm của hàm số f(x) = 18x^2 là:",
+            opts: ["A. 6x^3 + C", "B. 18x^3 + C", "C. 6x^2 + C", "D. 36x^1 + C"],
+            ans: 0,
+            exp: "Hướng dẫn: Áp dụng công thức ∫x^n dx = x^(n+1)/(n+1) + C. Ta có ∫18x^2 dx = 18 * x^3/3 + C = 6x^3 + C."
+        },
+        {
+            q: "Câu 56: Họ nguyên hàm của hàm số f(x) = 16x^3 là:",
+            opts: ["A. 4x^4 + C", "B. 16x^4 + C", "C. 4x^3 + C", "D. 48x^2 + C"],
+            ans: 0,
+            exp: "Hướng dẫn: Áp dụng công thức ∫x^n dx = x^(n+1)/(n+1) + C. Ta có ∫16x^3 dx = 16 * x^4/4 + C = 4x^4 + C."
+        },
+        {
+            q: "Câu 57: Họ nguyên hàm của hàm số f(x) = 8x^3 là:",
+            opts: ["A. 2x^4 + C", "C. 2x^3 + C", "D. 24x^2 + C", "B. 8x^4 + C"],
+            ans: 0,
+            exp: "Hướng dẫn: Áp dụng công thức ∫x^n dx = x^(n+1)/(n+1) + C. Ta có ∫8x^3 dx = 8 * x^4/4 + C = 2x^4 + C."
+        },
+        {
+            q: "Câu 58: Họ nguyên hàm của hàm số f(x) = 8x^3 là:",
+            opts: ["A. 2x^4 + C", "C. 2x^3 + C", "B. 8x^4 + C", "D. 24x^2 + C"],
+            ans: 0,
+            exp: "Hướng dẫn: Áp dụng công thức ∫x^n dx = x^(n+1)/(n+1) + C. Ta có ∫8x^3 dx = 8 * x^4/4 + C = 2x^4 + C."
+        },
+        {
+            q: "Câu 59: Họ nguyên hàm của hàm số f(x) = 16x^3 là:",
+            opts: ["A. 4x^4 + C", "C. 4x^3 + C", "B. 16x^4 + C", "D. 48x^2 + C"],
+            ans: 0,
+            exp: "Hướng dẫn: Áp dụng công thức ∫x^n dx = x^(n+1)/(n+1) + C. Ta có ∫16x^3 dx = 16 * x^4/4 + C = 4x^4 + C."
+        },
+        {
+            q: "Câu 60: Họ nguyên hàm của hàm số f(x) = 6x^2 là:",
+            opts: ["C. 2x^2 + C", "A. 2x^3 + C", "B. 6x^3 + C", "D. 12x^1 + C"],
+            ans: 1,
+            exp: "Hướng dẫn: Áp dụng công thức ∫x^n dx = x^(n+1)/(n+1) + C. Ta có ∫6x^2 dx = 6 * x^3/3 + C = 2x^3 + C."
+        },
+        {
+            q: "Câu 61: Thể tích của khối chóp có diện tích đáy B = 4 và chiều cao h = 5 bằng:",
+            opts: ["A. 20", "C. 9", "D. 10", "B. 6"],
+            ans: 3,
+            exp: "Hướng dẫn: Thể tích khối chóp V = (1/3)*B*h = (1/3)*4*5 = 6."
+        },
+        {
+            q: "Câu 62: Thể tích của khối chóp có diện tích đáy B = 4 và chiều cao h = 3 bằng:",
+            opts: ["B. 4", "D. 6", "A. 12", "C. 7"],
+            ans: 0,
+            exp: "Hướng dẫn: Thể tích khối chóp V = (1/3)*B*h = (1/3)*4*3 = 4."
+        },
+        {
+            q: "Câu 63: Thể tích của khối chóp có diện tích đáy B = 5 và chiều cao h = 3 bằng:",
+            opts: ["A. 15", "B. 5", "C. 8", "D. 7"],
+            ans: 1,
+            exp: "Hướng dẫn: Thể tích khối chóp V = (1/3)*B*h = (1/3)*5*3 = 5."
+        },
+        {
+            q: "Câu 64: Thể tích của khối chóp có diện tích đáy B = 7 và chiều cao h = 6 bằng:",
+            opts: ["A. 42", "C. 13", "D. 21", "B. 14"],
+            ans: 3,
+            exp: "Hướng dẫn: Thể tích khối chóp V = (1/3)*B*h = (1/3)*7*6 = 14."
+        },
+        {
+            q: "Câu 65: Thể tích của khối chóp có diện tích đáy B = 9 và chiều cao h = 6 bằng:",
+            opts: ["D. 27", "A. 54", "C. 15", "B. 18"],
+            ans: 3,
+            exp: "Hướng dẫn: Thể tích khối chóp V = (1/3)*B*h = (1/3)*9*6 = 18."
+        },
+        {
+            q: "Câu 66: Thể tích của khối chóp có diện tích đáy B = 9 và chiều cao h = 5 bằng:",
+            opts: ["D. 22", "C. 14", "B. 15", "A. 45"],
+            ans: 2,
+            exp: "Hướng dẫn: Thể tích khối chóp V = (1/3)*B*h = (1/3)*9*5 = 15."
+        },
+        {
+            q: "Câu 67: Thể tích của khối chóp có diện tích đáy B = 4 và chiều cao h = 8 bằng:",
+            opts: ["A. 32", "C. 12", "D. 16", "B. 10"],
+            ans: 3,
+            exp: "Hướng dẫn: Thể tích khối chóp V = (1/3)*B*h = (1/3)*4*8 = 10."
+        },
+        {
+            q: "Câu 68: Thể tích của khối chóp có diện tích đáy B = 7 và chiều cao h = 6 bằng:",
+            opts: ["C. 13", "D. 21", "B. 14", "A. 42"],
+            ans: 2,
+            exp: "Hướng dẫn: Thể tích khối chóp V = (1/3)*B*h = (1/3)*7*6 = 14."
+        },
+        {
+            q: "Câu 69: Thể tích của khối chóp có diện tích đáy B = 4 và chiều cao h = 6 bằng:",
+            opts: ["D. 12", "C. 10", "B. 8", "A. 24"],
+            ans: 2,
+            exp: "Hướng dẫn: Thể tích khối chóp V = (1/3)*B*h = (1/3)*4*6 = 8."
+        },
+        {
+            q: "Câu 70: Thể tích của khối chóp có diện tích đáy B = 7 và chiều cao h = 5 bằng:",
+            opts: ["B. 11", "A. 35", "D. 17", "C. 12"],
+            ans: 0,
+            exp: "Hướng dẫn: Thể tích khối chóp V = (1/3)*B*h = (1/3)*7*5 = 11."
+        },
+        {
+            q: "Câu 71: Thể tích của khối chóp có diện tích đáy B = 8 và chiều cao h = 4 bằng:",
+            opts: ["B. 10", "C. 12", "A. 32", "D. 16"],
+            ans: 0,
+            exp: "Hướng dẫn: Thể tích khối chóp V = (1/3)*B*h = (1/3)*8*4 = 10."
+        },
+        {
+            q: "Câu 72: Thể tích của khối chóp có diện tích đáy B = 10 và chiều cao h = 6 bằng:",
+            opts: ["D. 30", "A. 60", "C. 16", "B. 20"],
+            ans: 3,
+            exp: "Hướng dẫn: Thể tích khối chóp V = (1/3)*B*h = (1/3)*10*6 = 20."
+        },
+        {
+            q: "Câu 73: Thể tích của khối chóp có diện tích đáy B = 9 và chiều cao h = 7 bằng:",
+            opts: ["D. 31", "A. 63", "C. 16", "B. 21"],
+            ans: 3,
+            exp: "Hướng dẫn: Thể tích khối chóp V = (1/3)*B*h = (1/3)*9*7 = 21."
+        },
+        {
+            q: "Câu 74: Thể tích của khối chóp có diện tích đáy B = 9 và chiều cao h = 4 bằng:",
+            opts: ["A. 36", "C. 13", "D. 18", "B. 12"],
+            ans: 3,
+            exp: "Hướng dẫn: Thể tích khối chóp V = (1/3)*B*h = (1/3)*9*4 = 12."
+        },
+        {
+            q: "Câu 75: Thể tích của khối chóp có diện tích đáy B = 4 và chiều cao h = 5 bằng:",
+            opts: ["B. 6", "C. 9", "A. 20", "D. 10"],
+            ans: 0,
+            exp: "Hướng dẫn: Thể tích khối chóp V = (1/3)*B*h = (1/3)*4*5 = 6."
+        },
+        {
+            q: "Câu 76: Thể tích của khối chóp có diện tích đáy B = 6 và chiều cao h = 7 bằng:",
+            opts: ["B. 14", "A. 42", "C. 13", "D. 21"],
+            ans: 0,
+            exp: "Hướng dẫn: Thể tích khối chóp V = (1/3)*B*h = (1/3)*6*7 = 14."
+        },
+        {
+            q: "Câu 77: Thể tích của khối chóp có diện tích đáy B = 6 và chiều cao h = 5 bằng:",
+            opts: ["D. 15", "B. 10", "C. 11", "A. 30"],
+            ans: 1,
+            exp: "Hướng dẫn: Thể tích khối chóp V = (1/3)*B*h = (1/3)*6*5 = 10."
+        },
+        {
+            q: "Câu 78: Thể tích của khối chóp có diện tích đáy B = 6 và chiều cao h = 3 bằng:",
+            opts: ["B. 6", "C. 9", "D. 9", "A. 18"],
+            ans: 0,
+            exp: "Hướng dẫn: Thể tích khối chóp V = (1/3)*B*h = (1/3)*6*3 = 6."
+        },
+        {
+            q: "Câu 79: Thể tích của khối chóp có diện tích đáy B = 6 và chiều cao h = 5 bằng:",
+            opts: ["A. 30", "C. 11", "D. 15", "B. 10"],
+            ans: 3,
+            exp: "Hướng dẫn: Thể tích khối chóp V = (1/3)*B*h = (1/3)*6*5 = 10."
+        },
+        {
+            q: "Câu 80: Thể tích của khối chóp có diện tích đáy B = 8 và chiều cao h = 5 bằng:",
+            opts: ["A. 40", "D. 20", "B. 13", "C. 13"],
+            ans: 2,
+            exp: "Hướng dẫn: Thể tích khối chóp V = (1/3)*B*h = (1/3)*8*5 = 13."
+        },
+        {
+            q: "Câu 81: Trong không gian Oxyz, cho mặt cầu (S) có phương trình: (x - -3)^2 + (y - 3)^2 + (z - 0)^2 = 9. Tọa độ tâm I của mặt cầu là:",
+            opts: ["D. I(3; 3; 0)", "B. I(-3; 3; 0)", "C. I(-3; -3; 0)", "A. I(3; -3; 0)"],
+            ans: 1,
+            exp: "Hướng dẫn: Mặt cầu (x-a)^2 + (y-b)^2 + (z-c)^2 = R^2 có tâm I(a; b; c). Do đó tâm I(-3; 3; 0)."
+        },
+        {
+            q: "Câu 82: Trong không gian Oxyz, cho mặt cầu (S) có phương trình: (x - 1)^2 + (y - -5)^2 + (z - -4)^2 = 9. Tọa độ tâm I của mặt cầu là:",
+            opts: ["C. I(1; 5; -4)", "A. I(-1; 5; 4)", "B. I(1; -5; -4)", "D. I(-1; -5; 4)"],
+            ans: 2,
+            exp: "Hướng dẫn: Mặt cầu (x-a)^2 + (y-b)^2 + (z-c)^2 = R^2 có tâm I(a; b; c). Do đó tâm I(1; -5; -4)."
+        },
+        {
+            q: "Câu 83: Trong không gian Oxyz, cho mặt cầu (S) có phương trình: (x - -3)^2 + (y - 4)^2 + (z - -1)^2 = 9. Tọa độ tâm I của mặt cầu là:",
+            opts: ["B. I(-3; 4; -1)", "A. I(3; -4; 1)", "C. I(-3; -4; -1)", "D. I(3; 4; 1)"],
+            ans: 0,
+            exp: "Hướng dẫn: Mặt cầu (x-a)^2 + (y-b)^2 + (z-c)^2 = R^2 có tâm I(a; b; c). Do đó tâm I(-3; 4; -1)."
+        },
+        {
+            q: "Câu 84: Trong không gian Oxyz, cho mặt cầu (S) có phương trình: (x - 0)^2 + (y - 0)^2 + (z - 4)^2 = 9. Tọa độ tâm I của mặt cầu là:",
+            opts: ["C. I(0; 0; 4)", "B. I(0; 0; 4)", "D. I(0; 0; -4)", "A. I(0; 0; -4)"],
+            ans: 1,
+            exp: "Hướng dẫn: Mặt cầu (x-a)^2 + (y-b)^2 + (z-c)^2 = R^2 có tâm I(a; b; c). Do đó tâm I(0; 0; 4)."
+        },
+        {
+            q: "Câu 85: Trong không gian Oxyz, cho mặt cầu (S) có phương trình: (x - -3)^2 + (y - 0)^2 + (z - -2)^2 = 9. Tọa độ tâm I của mặt cầu là:",
+            opts: ["C. I(-3; 0; -2)", "A. I(3; 0; 2)", "B. I(-3; 0; -2)", "D. I(3; 0; 2)"],
+            ans: 2,
+            exp: "Hướng dẫn: Mặt cầu (x-a)^2 + (y-b)^2 + (z-c)^2 = R^2 có tâm I(a; b; c). Do đó tâm I(-3; 0; -2)."
+        },
+        {
+            q: "Câu 86: Trong không gian Oxyz, cho mặt cầu (S) có phương trình: (x - 1)^2 + (y - 1)^2 + (z - -4)^2 = 9. Tọa độ tâm I của mặt cầu là:",
+            opts: ["B. I(1; 1; -4)", "A. I(-1; -1; 4)", "C. I(1; -1; -4)", "D. I(-1; 1; 4)"],
+            ans: 0,
+            exp: "Hướng dẫn: Mặt cầu (x-a)^2 + (y-b)^2 + (z-c)^2 = R^2 có tâm I(a; b; c). Do đó tâm I(1; 1; -4)."
+        },
+        {
+            q: "Câu 87: Trong không gian Oxyz, cho mặt cầu (S) có phương trình: (x - -1)^2 + (y - 2)^2 + (z - -5)^2 = 9. Tọa độ tâm I của mặt cầu là:",
+            opts: ["D. I(1; 2; 5)", "B. I(-1; 2; -5)", "C. I(-1; -2; -5)", "A. I(1; -2; 5)"],
+            ans: 1,
+            exp: "Hướng dẫn: Mặt cầu (x-a)^2 + (y-b)^2 + (z-c)^2 = R^2 có tâm I(a; b; c). Do đó tâm I(-1; 2; -5)."
+        },
+        {
+            q: "Câu 88: Trong không gian Oxyz, cho mặt cầu (S) có phương trình: (x - 3)^2 + (y - -4)^2 + (z - -4)^2 = 9. Tọa độ tâm I của mặt cầu là:",
+            opts: ["C. I(3; 4; -4)", "B. I(3; -4; -4)", "D. I(-3; -4; 4)", "A. I(-3; 4; 4)"],
+            ans: 1,
+            exp: "Hướng dẫn: Mặt cầu (x-a)^2 + (y-b)^2 + (z-c)^2 = R^2 có tâm I(a; b; c). Do đó tâm I(3; -4; -4)."
+        },
+        {
+            q: "Câu 89: Trong không gian Oxyz, cho mặt cầu (S) có phương trình: (x - -3)^2 + (y - -1)^2 + (z - 3)^2 = 9. Tọa độ tâm I của mặt cầu là:",
+            opts: ["A. I(3; 1; -3)", "C. I(-3; 1; 3)", "D. I(3; -1; -3)", "B. I(-3; -1; 3)"],
+            ans: 3,
+            exp: "Hướng dẫn: Mặt cầu (x-a)^2 + (y-b)^2 + (z-c)^2 = R^2 có tâm I(a; b; c). Do đó tâm I(-3; -1; 3)."
+        },
+        {
+            q: "Câu 90: Trong không gian Oxyz, cho mặt cầu (S) có phương trình: (x - -3)^2 + (y - -5)^2 + (z - 0)^2 = 9. Tọa độ tâm I của mặt cầu là:",
+            opts: ["D. I(3; -5; 0)", "A. I(3; 5; 0)", "C. I(-3; 5; 0)", "B. I(-3; -5; 0)"],
+            ans: 3,
+            exp: "Hướng dẫn: Mặt cầu (x-a)^2 + (y-b)^2 + (z-c)^2 = R^2 có tâm I(a; b; c). Do đó tâm I(-3; -5; 0)."
+        },
+        {
+            q: "Câu 91: Trong không gian Oxyz, cho mặt cầu (S) có phương trình: (x - -3)^2 + (y - 2)^2 + (z - -2)^2 = 9. Tọa độ tâm I của mặt cầu là:",
+            opts: ["A. I(3; -2; 2)", "C. I(-3; -2; -2)", "D. I(3; 2; 2)", "B. I(-3; 2; -2)"],
+            ans: 3,
+            exp: "Hướng dẫn: Mặt cầu (x-a)^2 + (y-b)^2 + (z-c)^2 = R^2 có tâm I(a; b; c). Do đó tâm I(-3; 2; -2)."
+        },
+        {
+            q: "Câu 92: Trong không gian Oxyz, cho mặt cầu (S) có phương trình: (x - -4)^2 + (y - -1)^2 + (z - 0)^2 = 9. Tọa độ tâm I của mặt cầu là:",
+            opts: ["C. I(-4; 1; 0)", "D. I(4; -1; 0)", "A. I(4; 1; 0)", "B. I(-4; -1; 0)"],
+            ans: 3,
+            exp: "Hướng dẫn: Mặt cầu (x-a)^2 + (y-b)^2 + (z-c)^2 = R^2 có tâm I(a; b; c). Do đó tâm I(-4; -1; 0)."
+        },
+        {
+            q: "Câu 93: Trong không gian Oxyz, cho mặt cầu (S) có phương trình: (x - -2)^2 + (y - 5)^2 + (z - 3)^2 = 9. Tọa độ tâm I của mặt cầu là:",
+            opts: ["A. I(2; -5; -3)", "B. I(-2; 5; 3)", "D. I(2; 5; -3)", "C. I(-2; -5; 3)"],
+            ans: 1,
+            exp: "Hướng dẫn: Mặt cầu (x-a)^2 + (y-b)^2 + (z-c)^2 = R^2 có tâm I(a; b; c). Do đó tâm I(-2; 5; 3)."
+        },
+        {
+            q: "Câu 94: Trong không gian Oxyz, cho mặt cầu (S) có phương trình: (x - -4)^2 + (y - 2)^2 + (z - 4)^2 = 9. Tọa độ tâm I của mặt cầu là:",
+            opts: ["C. I(-4; -2; 4)", "B. I(-4; 2; 4)", "A. I(4; -2; -4)", "D. I(4; 2; -4)"],
+            ans: 1,
+            exp: "Hướng dẫn: Mặt cầu (x-a)^2 + (y-b)^2 + (z-c)^2 = R^2 có tâm I(a; b; c). Do đó tâm I(-4; 2; 4)."
+        },
+        {
+            q: "Câu 95: Trong không gian Oxyz, cho mặt cầu (S) có phương trình: (x - -3)^2 + (y - -5)^2 + (z - -5)^2 = 9. Tọa độ tâm I của mặt cầu là:",
+            opts: ["B. I(-3; -5; -5)", "A. I(3; 5; 5)", "C. I(-3; 5; -5)", "D. I(3; -5; 5)"],
+            ans: 0,
+            exp: "Hướng dẫn: Mặt cầu (x-a)^2 + (y-b)^2 + (z-c)^2 = R^2 có tâm I(a; b; c). Do đó tâm I(-3; -5; -5)."
+        },
+        {
+            q: "Câu 96: Trong không gian Oxyz, cho mặt cầu (S) có phương trình: (x - 2)^2 + (y - 5)^2 + (z - -5)^2 = 9. Tọa độ tâm I của mặt cầu là:",
+            opts: ["C. I(2; -5; -5)", "D. I(-2; 5; 5)", "A. I(-2; -5; 5)", "B. I(2; 5; -5)"],
+            ans: 3,
+            exp: "Hướng dẫn: Mặt cầu (x-a)^2 + (y-b)^2 + (z-c)^2 = R^2 có tâm I(a; b; c). Do đó tâm I(2; 5; -5)."
+        },
+        {
+            q: "Câu 97: Trong không gian Oxyz, cho mặt cầu (S) có phương trình: (x - -4)^2 + (y - 3)^2 + (z - 1)^2 = 9. Tọa độ tâm I của mặt cầu là:",
+            opts: ["B. I(-4; 3; 1)", "C. I(-4; -3; 1)", "A. I(4; -3; -1)", "D. I(4; 3; -1)"],
+            ans: 0,
+            exp: "Hướng dẫn: Mặt cầu (x-a)^2 + (y-b)^2 + (z-c)^2 = R^2 có tâm I(a; b; c). Do đó tâm I(-4; 3; 1)."
+        },
+        {
+            q: "Câu 98: Trong không gian Oxyz, cho mặt cầu (S) có phương trình: (x - 1)^2 + (y - -4)^2 + (z - -1)^2 = 9. Tọa độ tâm I của mặt cầu là:",
+            opts: ["A. I(-1; 4; 1)", "C. I(1; 4; -1)", "D. I(-1; -4; 1)", "B. I(1; -4; -1)"],
+            ans: 3,
+            exp: "Hướng dẫn: Mặt cầu (x-a)^2 + (y-b)^2 + (z-c)^2 = R^2 có tâm I(a; b; c). Do đó tâm I(1; -4; -1)."
+        },
+        {
+            q: "Câu 99: Trong không gian Oxyz, cho mặt cầu (S) có phương trình: (x - 3)^2 + (y - 0)^2 + (z - -1)^2 = 9. Tọa độ tâm I của mặt cầu là:",
+            opts: ["A. I(-3; 0; 1)", "C. I(3; 0; -1)", "D. I(-3; 0; 1)", "B. I(3; 0; -1)"],
+            ans: 3,
+            exp: "Hướng dẫn: Mặt cầu (x-a)^2 + (y-b)^2 + (z-c)^2 = R^2 có tâm I(a; b; c). Do đó tâm I(3; 0; -1)."
+        },
+        {
+            q: "Câu 100: Trong không gian Oxyz, cho mặt cầu (S) có phương trình: (x - 2)^2 + (y - -1)^2 + (z - 5)^2 = 9. Tọa độ tâm I của mặt cầu là:",
+            opts: ["B. I(2; -1; 5)", "A. I(-2; 1; -5)", "D. I(-2; -1; -5)", "C. I(2; 1; 5)"],
+            ans: 0,
+            exp: "Hướng dẫn: Mặt cầu (x-a)^2 + (y-b)^2 + (z-c)^2 = R^2 có tâm I(a; b; c). Do đó tâm I(2; -1; 5)."
+        }
+    ];
+    const completed = new Array(100).fill(false);
+    let currentQIndex = -1;
+    let solvedCount = 0;
+
+    const gridContainer = document.getElementById('grid');
+    const modal = document.getElementById('questionModal');
+    const qText = document.getElementById('q-text');
+    const qOptions = document.getElementById('q-options');
+    const explanationBox = document.getElementById('explanation');
+    const expText = document.getElementById('exp-text');
+    const btnBackGrid = document.getElementById('btn-back-grid');
+    const solvedCountText = document.getElementById('solved-count');
+
+    // Khởi tạo 100 ô vuông
+    for (let i = 0; i < 100; i++) {
+        const box = document.createElement('div');
+        box.className = 'grid-item';
+        box.innerText = i + 1;
+        box.onclick = () => openQuestion(i, box);
+        gridContainer.appendChild(box);
+    }
+
+    function openQuestion(index, boxElement) {
+        if (completed[index]) return; // Nếu đã làm xong thì không mở lại
+
+        currentQIndex = index;
+        const q = questions[index];
+        
+        qText.innerHTML = q.q;
+        qOptions.innerHTML = '';
+        explanationBox.style.display = 'none';
+        btnBackGrid.style.display = 'none';
+        
+        q.opts.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-option';
+            btn.innerHTML = opt;
+            btn.onclick = () => checkAnswer(idx, btn, index, boxElement);
+            qOptions.appendChild(btn);
+        });
+
+        modal.style.display = 'flex';
+    }
+
+    function checkAnswer(selectedIdx, btnElement, qIndex, boxElement) {
+        if (completed[qIndex]) return;
+
+        const q = questions[qIndex];
+        if (selectedIdx === q.ans) {
+            // ĐÚNG
+            btnElement.classList.add('correct');
+            completed[qIndex] = true;
+            boxElement.classList.add('completed');
+            
+            solvedCount++;
+            solvedCountText.innerText = solvedCount;
+
+            expText.innerHTML = q.exp;
+            explanationBox.style.display = 'block';
+            btnBackGrid.style.display = 'inline-block';
+            
+            const allBtns = qOptions.getElementsByClassName('btn-option');
+            for(let b of allBtns) b.style.pointerEvents = 'none';
+            
+            if (solvedCount === 100) {
+                setTimeout(() => alert("XUẤT SẮC! CÁC EM ĐÃ CHINH PHỤC TOÀN BỘ 100 Ô VUÔNG!"), 500);
+            }
+
+        } else {
+            // SAI
+            btnElement.classList.add('wrong');
+            let originalText = btnElement.innerHTML;
+            btnElement.innerText = "Cố gắng chọn lại nhé";
+            setTimeout(() => {
+                btnElement.classList.remove('wrong');
+                btnElement.innerHTML = originalText;
+            }, 1200);
+        }
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+    }
+    
+    // Đóng khi click ra ngoài hộp thoại
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            closeModal();
+        }
+    }
+
+</script>
+</body>
+</html>
